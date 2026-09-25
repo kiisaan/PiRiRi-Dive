@@ -1,0 +1,37 @@
+name: TicketDive Tracker
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # 1時間ごとに自動実行
+  workflow_dispatch:      # 手動テスト実行ボタンを表示
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリの読み込み
+        uses: actions/checkout@v3
+
+      - name: Python環境設定
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 必要なライブラリのインストール
+        run: |
+          pip install requests beautifulsoup4 playwright
+          playwright install chromium --with-deps
+
+      - name: スクリプト実行
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
+        run: python main.py
+
+      - name: 履歴(seen_events.json)の更新保存
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_events.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update seen events" && git push)
