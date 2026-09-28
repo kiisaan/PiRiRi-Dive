@@ -282,7 +282,7 @@ def main():
         chunk_size = 2
         for i in range(0, len(msg_blocks), chunk_size):
             chunk = msg_blocks[i : i + chunk_size]
-            msg = "【Falench.ライブ情報（ダイブ）】\n\n"
+            msg = "【PiRiRiライブ情報（ダイブ）】\n\n"
             msg += "\n\n──────────────────\n\n".join(chunk)
             send_line_message(msg)
 
