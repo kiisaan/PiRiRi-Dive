@@ -2,21 +2,31 @@ name: TicketDive Tracker
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 1時間ごとに自動実行
-  workflow_dispatch:      # 手動テスト実行ボタンを表示
+    - cron: '17 * * * *'  # 保険（0分は混むので避ける）。本命は cron-job.org からの起動
+  workflow_dispatch:      # 手動テスト実行ボタン＋外部からの起動
+
+# 外部起動とscheduleが重なっても同時に動かさない（seen_events.json の取り合い・二重通知を防ぐ）
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write         # seen_events.json を push するため
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # 固まったときに延々と動き続けないように
 
     steps:
       - name: リポジトリの読み込み
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Python環境設定
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: 必要なライブラリのインストール
         run: |
@@ -34,4 +44,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add seen_events.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update seen events" && git push)
+          if git diff --staged --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "Update seen events"
+            git pull --rebase
+            git push
+          fi
